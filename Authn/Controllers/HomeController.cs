@@ -26,8 +26,13 @@ namespace Authn.Controllers
         {
             return View();
         }
+        [HttpGet("denied")]
+        public IActionResult Denied()
+        {
+            return View();
+        }
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         public IActionResult Secured()
         {
             return View();
@@ -41,19 +46,29 @@ namespace Authn.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Validate(string username, string password, string returnUrl)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             if (username == "bob" && password == "pizza")
             {
                 var claims = new List<Claim>();
                 claims.Add(new Claim("username", username));
                 claims.Add(new Claim(ClaimTypes.NameIdentifier, username));
+                claims.Add(new Claim(ClaimTypes.Name, "Bob Edward Jones"));
+                //claims.Add(new Claim(ClaimTypes.Role, "Admin"));
                 var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
                 await HttpContext.SignInAsync(claimsPrincipal);
                 return Redirect(returnUrl);
             }
-            return BadRequest();
-        }
 
+            TempData["Error"] = "Error. Username or password is  invalid";
+            return View("login");
+        }
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync();
+            return Redirect("/");
+        }
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
